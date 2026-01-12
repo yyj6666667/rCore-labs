@@ -1,3 +1,30 @@
+---
+debug log:
+
+* 调用链：
+![alt text](image-2.png)
+
+learning log:
+
+* 层次结构：
+![alt text](./images/image.png)
+
+* core 库是 Rust 最底层的库，它被设计为：  
+  * 无依赖：不依赖任何操作系统功能
+  * 可移植：可以在任何平台上运行，包括裸机
+  * 最小化：只包含最基本的语言功能
+
+* rust 库层级包含了 std, alloc, core, 其中只有std依赖os
+
+* refer
+![alt text](image-1.png)
+
+* rust-objdump -S target/riscv64gc-unknown-none-elf/debug/os 反汇编命令查看
+
+* ELF 可执行文件, Executable and Linkable Format - Linux/Unix 系统的标准可执行文件格式。
+
+* 特性（trait）概念接近于 Java 中的接口（Interface）
+* impl <特性名> for <所实现的类型名>
 # rCore-Tutorial-Code-2025S
 
 ### Code
