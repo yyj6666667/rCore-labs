@@ -14,8 +14,10 @@ SECTIONS {
         *(.sdata .sdata.*)
     }
     .bss : {
+        sbss = .;
         *(.bss.uninit)
         *(.bss .bss.*)
         *(.sbss .sbss.*)
+        ebss = .;
     }
 }

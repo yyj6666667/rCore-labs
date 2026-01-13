@@ -9,11 +9,32 @@ mod sbi;
 
 core::arch::global_asm!(include_str!("entry.asm")); ///写相当于 mod entry ， 哈哈哈， 只是entry是汇编
 
-//#[no_mangle]
-//pub fn rust_main() -> ! {
-//    use crate::sbi::shutdown;
-//    shutdown();
-//}
+//add bss clear func
+#[no_mangle]
+fn clear_bss() {
+    extern "C" {
+        fn sbss();
+        fn ebss();
+    }
+    (sbss as usize..ebss as usize).for_each(|a| {
+                                                        //sbss 本身是 ptr， 转换成usize
+                                                        // .. 创建了一个范围
+                                                        // 直接把范围当成对象用， 第一眼看很离谱， 看多了就好了
+        unsafe { (a as *mut u8).write_volatile(0);}
+                                                        // a as *mut u8 ， 把a转换成可变的u8指针
+                                                        // unsafe 绕过rust安全检查， 才能直接操作内存
+                                                        // volatile 确保每次的写入不会被编译器优化
+    });
+}
+
+
+#[no_mangle]
+pub fn rust_main() {
+    clear_bss();
+    //clear_bss 是为了填平刚开机时ram里面的随机电平值， 安全
+    use crate::sbi::shutdown;
+    shutdown();
+}
 
 const SYSCALL_EXIT: usize = 93;
 const SYSCALL_WRITE: usize = 64;
@@ -69,12 +90,6 @@ macro_rules! println {
     }
 }
 
-#[no_mangle]
-pub fn rust_main() {
-    print!("for test, please show me:");
-    use crate::sbi::shutdown;
-    shutdown();
-}
 //#[no_mangle]
 //extern "C" fn _start() {
 //    print!("哎呀， world");
