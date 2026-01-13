@@ -9,15 +9,11 @@ mod sbi;
 
 core::arch::global_asm!(include_str!("entry.asm")); ///写相当于 mod entry ， 哈哈哈， 只是entry是汇编
 
-use  crate::sbi::shutdown;
-
-
-
-#[no_mangle]
-pub fn rust_main() -> ! {
-
-    shutdown();
-}
+//#[no_mangle]
+//pub fn rust_main() -> ! {
+//    use crate::sbi::shutdown;
+//    shutdown();
+//}
 
 const SYSCALL_EXIT: usize = 93;
 const SYSCALL_WRITE: usize = 64;
@@ -73,6 +69,12 @@ macro_rules! println {
     }
 }
 
+#[no_mangle]
+pub fn rust_main() {
+    print!("for test, please show me:");
+    use crate::sbi::shutdown;
+    shutdown();
+}
 //#[no_mangle]
 //extern "C" fn _start() {
 //    print!("哎呀， world");

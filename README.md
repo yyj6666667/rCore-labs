@@ -1,5 +1,22 @@
 ---
 debug log:
+*这正是全新的rust_main入口！ 而且成功走shut_down()退出的。不知道为什么print没有成功打印， 我认为这不是ch1的重点， 决定跳过
+![alt text](image-6.png)
+ ![alt text](image-5.png)
+ 成功进入预设的_start(), lab1基本完成
+* 是编译的问题， 下面给出一个gdb调试版
+  * qemu-system-riscv64 -machine virt -nographic  -bios ../bootloader/rustsbi-qemu.bin -device loader,file=target/riscv64gc-unknown-none-elf/release/os.bin,  addr=0x80200000 
+    -s -S
+  * 其中 -s 代表转发到端口 1234， -S 代表先暂停着， 方便从头开始调试
+  * 在另一个终端：
+  * riscv64-unknown-elf-gdb target/riscv64gc-unknown-none-elf/release/os
+  * 连接：
+  * target remote : 1234
+    break *0x80200000  
+    continue
+
+* rust-objdump -S target/riscv64gc-unknown-none-elf/release/os 反汇编命令查看
+
 * 最后一步退出卡住了， gdb查看发现entry.asm没有成功被链接
       ![alt text](image-4.png)
 * #[...]：outer attribute，放在项（item）之前（例如放在结构体、函数、模组、crate 外部等）来修饰该项或被编译器读取。
@@ -29,7 +46,7 @@ learning log:
 * refer
 ![alt text](image-1.png)
 
-* rust-objdump -S target/riscv64gc-unknown-none-elf/debug/os 反汇编命令查看
+
 
 * ELF 可执行文件, Executable and Linkable Format - Linux/Unix 系统的标准可执行文件格式。
 
