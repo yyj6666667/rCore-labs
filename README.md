@@ -1,5 +1,15 @@
 ---
 debug log:
+* 最后一步退出卡住了， gdb查看发现entry.asm没有成功被链接
+      ![alt text](image-4.png)
+* #[...]：outer attribute，放在项（item）之前（例如放在结构体、函数、模组、crate 外部等）来修饰该项或被编译器读取。
+例： #[derive(Debug)] struct S;
+#![...]：inner attribute，使用 ! 放在 item 内部（常见于 crate 根的 lib.rs / main.rs 顶部），其作用是修饰包含它的那个项（典型的是修饰整个 crate）。
+例：在 crate 根写 #![no_std] 或 #![allow(dead_code)]
+
+* 区分mod crate:
+![alt text](image-3.png)
+
 
 * 调用链：
 ![alt text](image-2.png)
