@@ -1,27 +1,5 @@
-##debug and construct log
-* os, user 分属**两个cargo项目**， 通过os/build.rs 生成 link_app.S 把user/build/bin 目录下的二进制文件写到os的数据段中
-* syscall id 的传递超出了rust语言的表达能力， 需要unsafe的内嵌汇编完成参数/返回值绑定
-```rust
-pub fn syscall(id: usize, args: [usize; 3]) -> isize {
-    let mut ret: isize;
-    unsafe {
-        core::arch::asm!(
-            "ecall",
-            inlateout("x10") args[0] => ret,
-            in("x11") args[1],
-            in("x12") args[2],
-            in("x17") id
-        );
-    }
-    ret
-}
-```
-* rust的模块系统不基于文件系统， 必须由父模块显式声明子模块(pub mod xxx;)。这跟py的隐式声明很不一样
-  * 同级： use super::other_rs::some_func;
-  * 从根目录： use crate::layer1::layer2::some_func;
----
-# rCore-Tutorial-Code-2025S
-
+# rCore-Tutorial-Test-2025S
+Test suit for rCore-Tutorial-Code-2025S
 ### Code
 - [Soure Code of labs for 2025S](https://github.com/LearningOS/rCore-Tutorial-Code-2025S)
 ### Documents
