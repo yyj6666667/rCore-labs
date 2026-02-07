@@ -150,5 +150,5 @@ pub fn run_next_app() -> ! {
             USER_STACK.get_sp(),
         )) as *const _ as usize);
     }
-    panic!("Unreachable in batch::run_current_app!");
+    panic!("Unreachable in batch::run_next_app!");
 }

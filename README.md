@@ -1,4 +1,22 @@
 ##debug and construct log
+* 整个批处理的流程是：
+  use app_0 to app_1 as example:
+  1. S: run_next_app() load binary app_0 into ADDR_BASE and call app_0
+  2. S->U: __restore go into User mode, excute app_0
+  3. U->S: app_0 exit(0) normally. trigger trap
+  4. S: trap_handlers 分发给 sys_exit() 
+  5. S: run_next_app() call app_1
+---
+* CSR
+  1. sstatus
+  2. sepc
+  3. scause
+---
+* 特权级架构：
+  1. user U, apps
+  2. S， supervisor, os
+  3. M, machine,  bootloader
+---
 * os, user 分属**两个cargo项目**， 通过os/build.rs 生成 link_app.S 把user/build/bin 目录下的二进制文件写到os的数据段中
 * syscall id 的传递超出了rust语言的表达能力， 需要unsafe的内嵌汇编完成参数/返回值绑定
 ```rust
