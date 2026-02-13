@@ -1,3 +1,54 @@
+2.13 
+
+* lambda's writing style:
+  ```rust
+  (base_i..base_i + SINGLE_APP_SIZE)
+    .for_each(|whatever_you_like|  unsafe {
+      (whatever_you_like as *mut u8).write_volatile(0) // write_volatile is to prevent compiler delete accidentally
+    })
+  ```
+  * another style: core::slice 包装
+  ```rust
+  let slice_yyj = unsafe {
+    core::slice::from_raw_parts_mut(ptr, len)
+  };
+  slice_yyj.fill(0);
+  ```
+* 汇编传入参数a0， a1 ... 不是显式的
+  c 与 rust 的衔接部分
+  ```rust
+  core::arch::global_asm!(include_str!("switch.S"));
+  extern "C" {
+    pub fn __switch(
+      current_taskcontent_ptr: *mut TaskContext,
+      next_taskcontent_ptr: *const TaskContext;
+    )
+  }
+  ```
+    其中：
+  ```rust
+  #[repr(C)]
+  pub struct TaskContext {
+    ra: usize,
+    sp: usize,
+    s: [usize; 12],
+  }
+  ```
+* 函数宏： 真.字面意思
+ ```asm
+ .macro SAVE_SN n
+  sd s\n, (\n + 2)*8(a0)
+ .endm
+
+  sd ra, 0(a0)
+  .set n, 0
+  .rept 12
+    SAVE_SN %n
+    .set n, n + 1
+  .endr
+ ```
+ * 区分 __switch 和 __alltraps, __restore 的不同，就看caller-saved, callee-saved registers
+
 # rCore-Tutorial-Code-2025S
 
 ### Code
