@@ -54,6 +54,7 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            syscall_cnt: [0;500],
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
@@ -168,4 +169,19 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+///
+pub fn get_current_task_id() -> usize {
+    return TASK_MANAGER.inner.exclusive_access().current_task;
+}
+
+///
+pub fn get_syscall_cnt(_task_id: usize, _syscall_id: usize) -> usize {
+    return TASK_MANAGER.inner.exclusive_access().tasks[_task_id].syscall_cnt[_syscall_id];
+}
+
+///
+pub fn increase_syscall_cnt(_task_id: usize, _syscall_id: usize) {
+    TASK_MANAGER.inner.exclusive_access().tasks[_task_id].syscall_cnt[_syscall_id] += 1;
 }
