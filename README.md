@@ -1,5 +1,39 @@
 2.13 
+* note for TaskManager:
+  ```rust
+  impl TaskManager {
+    fn find_next_task(&self) -> Option<usize> {
+      let inner = self.inner.exclusive_access();
+      let current = inner.current_task;
+      (current + 1..current + self.num_app + 1)
+        .map(|id| id % self.num_app)
+        .find(|id| inner.tasks[*id].task_status == TaskStatus::Ready)
+        //map 传递值
+        //find, filter, any, all, position 传递引用
+    }
 
+    fn run_next_task(&self) {
+      if let Some(next) = self.find_next_task() {
+        //略
+      }
+    }
+  }
+
+  pub struct TaskManager {
+    num_app: usize,
+    inner: UPSafeCell<TaskManagerInner>,
+  }
+
+  struct TaskManagerInner {
+    tasks: [TaskControlBlock; MAX_APP_NUM],
+    current_task: usize,
+  }
+
+  pub struct TaskControlBlock {
+    pub task_status: TaskStatus,
+    pub task_cx: TaskContext,
+  }
+  ```
 * lambda's writing style:
   ```rust
   (base_i..base_i + SINGLE_APP_SIZE)
@@ -48,6 +82,10 @@
   .endr
  ```
  * 区分 __switch 和 __alltraps, __restore 的不同，就看caller-saved, callee-saved registers
+ * caller-saved on risk-v: Volatile
+    - t0-t6(temporary), a0-a7(arguments)
+  *callee-saved on risk-v: Non-Volatile
+    - s0 - s11 (saved registers)
 
 # rCore-Tutorial-Code-2025S
 
