@@ -1,3 +1,36 @@
+* 记录一个有代表性的函数： `translate_byte_buffer`
+  map addr from user virtual space to kernel virtual space
+  ```rust
+  pub fn translated_byte_buffer(token: usize, ptr: *const u8,
+    len: usize) -> Vec<&'static mut [u8]> {
+    let page_table = PageTable::from_token(token);
+    let mut start = ptr as usize;
+    let end = start + len;
+    let mut v = Vec::new();
+    while start < end {
+      let start_va :VirtAddr = start.into();
+      let mut vpn = start_va.floor();
+      let ppn = page_table.translate(vpn).unwarp().ppn();
+
+      vpn += 1;
+      //handle the last page:
+      let mut end_va = min(VirtAddr::from(end), vpn.into());
+      if end_va.page_offset() == 0 {
+        //include at least the first page and middle pages
+        v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..]);
+      } else {
+        v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..end_va.page_offset()]);
+      }
+
+      start = end_va.into();
+    }
+    v
+  }
+  ```
+* 内核也是在虚拟地址空间里工作，只是对物理内存做了恒等映射，所以看起来像“直接访问物理地址”
+* sys_get_time 的实现：不能直接解引用用户指针，必须通过「当前进程的页表」把用户地址翻译成内核能访问的物理页再写
+* 当前实验是：进程和内核各一张页表，trap 时切换 satp，两套地址空间独立。另外一种设计是一张表里既有用户区又有内核区。
+
 # rCore-Tutorial-Code-2025S
 
 ### Code
