@@ -243,4 +243,21 @@ pub fn map_for_current_task(start_vpn: VirtPageNum, num_pages: usize, map_perm: 
 }
 
 ///
-pub fn unmap_for_current_task(_start_vpn: VirtPageNum, _num_pages: usize) -> isize {-1}
+///
+pub fn unmap_for_current_task(start_vpn: VirtPageNum, num_pages: usize) -> isize {
+    let task_id = get_current_task_id();
+    let memory_set = &mut TASK_MANAGER.inner.exclusive_access().tasks[task_id].memory_set;
+    let mut end_vpn = start_vpn;
+    for _ in 0..num_pages {
+        if let Some(pte) = memory_set.translate(end_vpn) {
+            if !pte.is_valid() { // 不能解除不存在的映射
+                return -1;
+            }
+            memory_set.unmap_from_page_table(end_vpn);
+            end_vpn.step();
+        } else { // 不能解除不存在的映射
+            return -1;
+        }
+    }
+    return 0;
+}

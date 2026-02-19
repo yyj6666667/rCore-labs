@@ -2,7 +2,7 @@
 use core::mem::size_of;
 
 use crate::{
-    task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, get_current_task_id, get_syscall_cnt, current_user_token, map_for_current_task},
+    task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, get_current_task_id, get_syscall_cnt, current_user_token, map_for_current_task, unmap_for_current_task},
     timer::get_time_us,
     mm::{VirtAddr, translated_byte_buffer, MapPermission},
     config::PAGE_SIZE,
@@ -116,9 +116,21 @@ pub fn sys_mmap(_start: usize, _len: usize, _prot: usize) -> isize {
 
 // YOUR JOB: Implement munmap.
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    trace!("kernel: sys_munmap NOT IMPLEMENTED YET!");
-    -1
+    if _start % PAGE_SIZE != 0 { // 如果虚拟地址没有按页对齐直接失败
+        return -1;
+    }
+    let num_pages = (_len + PAGE_SIZE - 1) / PAGE_SIZE; // page 数向上取整
+    let vpn = VirtAddr::from(_start).floor();
+    match unmap_for_current_task(vpn, num_pages) {
+        0 => {
+            return 0;
+        },
+        _ => {
+            return -1;
+        },
+    };
 }
+
 /// change data segment size
 pub fn sys_sbrk(size: i32) -> isize {
     trace!("kernel: sys_sbrk");
