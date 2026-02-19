@@ -2,9 +2,10 @@
 use core::mem::size_of;
 
 use crate::{
-    task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, get_current_task_id, get_syscall_cnt, current_user_token},
+    task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, get_current_task_id, get_syscall_cnt, current_user_token, map_for_current_task},
     timer::get_time_us,
-    mm::translated_byte_buffer,
+    mm::{VirtAddr, translated_byte_buffer, MapPermission},
+    config::PAGE_SIZE,
 };
 
 #[repr(C)]
@@ -80,9 +81,37 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
 }
 
 // YOUR JOB: Implement mmap.
-pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
+pub fn sys_mmap(_start: usize, _len: usize, _prot: usize) -> isize {
     trace!("kernel: sys_mmap NOT IMPLEMENTED YET!");
-    -1
+    if _start % PAGE_SIZE != 0 { // 如果虚拟地址没有按页对齐直接失败
+        return -1;
+    }
+    if _prot & !0x7 != 0 { // _prot 其余位必须为 0
+        return -1;
+    }
+    if _prot & 0x7 == 0 { // 这样的内存无意义
+        return -1;
+    }
+    let num_pages = (_len + PAGE_SIZE - 1) / PAGE_SIZE; // page 数向上取整
+    let mut map_perm: MapPermission = MapPermission::U; // MapPermission::V 会在 page_table 的 map 中被加上
+    if _prot & 0x1 != 0 { // read
+        map_perm |= MapPermission::R;
+    }
+    if _prot & 0x2 != 0 { // write
+        map_perm |= MapPermission::W;
+    }
+    if _prot & 0x4 != 0 { // execute
+        map_perm |= MapPermission::X;
+    }
+    let vpn = VirtAddr::from(_start).floor();
+    match map_for_current_task(vpn, num_pages, map_perm) {
+        0 => {
+            return 0;
+        },
+        _ => {
+            return -1;
+        }
+    };
 }
 
 // YOUR JOB: Implement munmap.
