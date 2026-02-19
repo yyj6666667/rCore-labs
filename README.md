@@ -74,10 +74,10 @@ Notice: $ID is from [1-9]
 
 ```bash
 # setup build&run environment first
-$ git clone https://github.com/LearningOS/rCore-Tutorial-Code-2025S.git
-$ cd rCore-Tutorial-Code-2025S
-$ git clone https://github.com/LearningOS/rCore-Tutorial-Checker-2025S.git ci-user
-$ git clone https://github.com/LearningOS/rCore-Tutorial-Test-2025S.git ci-user/user
-$ cd ci-user && make test CHAPTER=$ID
+ git clone https://github.com/LearningOS/rCore-Tutorial-Code-2025S.git
+ cd rCore-Tutorial-Code-2025S
+ git clone https://github.com/LearningOS/rCore-Tutorial-Checker-2025S.git ci-user
+ git clone https://github.com/LearningOS/rCore-Tutorial-Test-2025S.git ci-user/user
+ cd ci-user && make test CHAPTER=4
 ```
 Notice: $ID is from [3,4,5,6,8]

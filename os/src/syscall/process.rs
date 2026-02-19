@@ -1,9 +1,11 @@
 //! Process management syscalls
-use alloc::vec::Vec;
 use core::mem::size_of;
-use crate::task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, current_user_token};
-use crate::timer::get_time_us;
-use crate::mm::translated_byte_buffer;
+
+use crate::{
+    task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, get_current_task_id, get_syscall_cnt, current_user_token},
+    timer::get_time_us,
+    mm::translated_byte_buffer,
+};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -54,7 +56,27 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 /// HINT: You might reimplement it with virtual memory management.
 pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
     trace!("kernel: sys_trace");
-    -1
+    let token = current_user_token();
+    match _trace_request {
+        0 => {
+            // 从用户空间 _id 地址读 1 字节，返回该字节（作为 isize）
+            let buffers = translated_byte_buffer(token, _id as *const u8, size_of::<u8>());
+            buffers[0][0] as isize
+        },
+        1 => {
+            // 向用户空间 _id 地址写 1 字节，值为 _data 的低 8 位
+            let mut buffers = translated_byte_buffer(token, _id as *const u8, size_of::<u8>());
+            buffers[0][0] = _data as u8;
+            0
+        },
+        2 => {
+            let syscall_id = _id;
+            let current_task_id = get_current_task_id();
+            let ret = get_syscall_cnt(current_task_id, syscall_id) as isize;
+            ret
+        },
+        _ => -1,
+    }
 }
 
 // YOUR JOB: Implement mmap.
