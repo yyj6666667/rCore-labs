@@ -4,7 +4,7 @@ use core::mem::size_of;
 use crate::{
     task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next, get_current_task_id, get_syscall_cnt, current_user_token, map_for_current_task, unmap_for_current_task},
     timer::get_time_us,
-    mm::{VirtAddr, translated_byte_buffer, MapPermission},
+    mm::{VirtAddr, translated_byte_buffer, MapPermission, PageTable},
     config::PAGE_SIZE,
 };
 
@@ -60,11 +60,38 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
     let token = current_user_token();
     match _trace_request {
         0 => {
+            // 检查地址是否合法
+            let page_table = PageTable::from_token(token);
+            let va = VirtAddr::from(_id);
+            let vpn = va.floor();
+            let pte_opt = page_table.translate(vpn); // return none or some(pte)
+            match pte_opt {
+                Some(pte) => {
+                    if !pte.is_valid() {
+                        return -1;
+                    }
+                },
+                None => return -1,
+            }
+            //剩下合法情况
             // 从用户空间 _id 地址读 1 字节，返回该字节（作为 isize）
             let buffers = translated_byte_buffer(token, _id as *const u8, size_of::<u8>());
             buffers[0][0] as isize
         },
         1 => {
+            // 检查地址是否合法
+            let page_table = PageTable::from_token(token);
+            let va = VirtAddr::from(_id);
+            let vpn = va.floor();
+            let pte_opt = page_table.translate(vpn); // return none or some(pte)
+            match pte_opt {
+                Some(pte) => {
+                    if !pte.is_valid() || !pte.writable() {
+                        return -1;
+                    }
+                },
+                None => return -1,
+            }
             // 向用户空间 _id 地址写 1 字节，值为 _data 的低 8 位
             let mut buffers = translated_byte_buffer(token, _id as *const u8, size_of::<u8>());
             buffers[0][0] = _data as u8;
