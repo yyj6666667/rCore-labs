@@ -1,3 +1,59 @@
+* mmap: 安全映射 + 地址分配
+  ```rust
+  pub fn sys_mmap(_start: usize, _len: usize, _prot: usize) -> isize {
+    trace!("kernel: sys_mmap NOT IMPLEMENTED YET!");
+    if _start % PAGE_SIZE != 0 { // 如果虚拟地址没有按页对齐直接失败
+        return -1;
+    }
+    if _prot & !0x7 != 0 { // _prot 其余位必须为 0
+        return -1;
+    }
+    if _prot & 0x7 == 0 { // 这样的内存无意义
+        return -1;
+    }
+    let num_pages = (_len + PAGE_SIZE - 1) / PAGE_SIZE; // page 数向上取整
+    let mut map_perm: MapPermission = MapPermission::U; // MapPermission::V 会在 page_table 的 map 中被加上
+    if _prot & 0x1 != 0 { // read
+        map_perm |= MapPermission::R;
+    }
+    if _prot & 0x2 != 0 { // write
+        map_perm |= MapPermission::W;
+    }
+    if _prot & 0x4 != 0 { // execute
+        map_perm |= MapPermission::X;
+    }
+    let vpn = VirtAddr::from(_start).floor();
+    match map_for_current_task(vpn, num_pages, map_perm) {
+        0 => {
+            return 0;
+        },
+        _ => {
+            return -1;
+        }
+    };
+  }
+
+  pub fn map_for_current_task(start_vpn: VirtPageNum, num_pages: usize, map_perm: MapPermission) -> isize {
+    //前期的安全检查
+    let task_id = get_current_task_id();
+    let memory_set = &mut TASK_MANAGER.inner.exclusive_access().tasks[task_id].memory_set;
+    let mut end_vpn = start_vpn;
+    // 检查亟待映射的虚拟地址是否已经被映射了
+    for _ in 0..num_pages {
+        if let Some(pte) = memory_set.translate(end_vpn) {
+            if pte.is_valid() { // vpn 已经被映射到了已经存在的物理页
+                return -1;
+            }
+        }
+        end_vpn.step();
+    }
+    let start_va = VirtAddr::from(start_vpn);
+    let end_va = VirtAddr::from(end_vpn);
+    // 真正的映射是发生在 memory_set 的 insert_framed_area 中
+    memory_set.insert_framed_area(start_va, end_va, map_perm);
+    return 0;
+  }
+  ```
 * 记录一个有代表性的函数： `translate_byte_buffer`
   map addr from user virtual space to kernel virtual space
   ```rust
