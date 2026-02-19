@@ -67,7 +67,7 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
             let pte_opt = page_table.translate(vpn); // return none or some(pte)
             match pte_opt {
                 Some(pte) => {
-                    if !pte.is_valid() {
+                    if !pte.is_valid() || !pte.usermode() || !pte.readable() {
                         return -1;
                     }
                 },
@@ -86,7 +86,7 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
             let pte_opt = page_table.translate(vpn); // return none or some(pte)
             match pte_opt {
                 Some(pte) => {
-                    if !pte.is_valid() || !pte.writable() {
+                    if !pte.is_valid() || !pte.usermode() ||!pte.writable() {
                         return -1;
                     }
                 },
