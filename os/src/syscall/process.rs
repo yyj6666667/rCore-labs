@@ -75,8 +75,8 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
             }
             //剩下合法情况
             // 从用户空间 _id 地址读 1 字节，返回该字节（作为 isize）
-            let buffers = translated_byte_buffer(token, _id as *const u8, size_of::<u8>());
-            buffers[0][0] as isize
+            let ppn = pte_opt.unwrap().ppn();
+            ppn.get_bytes_array()[va.page_offset()] as isize
         },
         1 => {
             // 检查地址是否合法
@@ -93,8 +93,8 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
                 None => return -1,
             }
             // 向用户空间 _id 地址写 1 字节，值为 _data 的低 8 位
-            let mut buffers = translated_byte_buffer(token, _id as *const u8, size_of::<u8>());
-            buffers[0][0] = _data as u8;
+            let written = &mut pte_opt.unwrap().ppn().get_bytes_array()[va.page_offset()];
+            *written = _data as u8;
             0
         },
         2 => {

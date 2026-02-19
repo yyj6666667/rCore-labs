@@ -1,3 +1,10 @@
+* ch4 finished. the full virtual addr and legal pte checking is the main debug problem encountered in this experiment.
+* sys_trace translate pte twice. remaining some space to refactor.
+  ```rust
+  //write
+  let written = &mut pte_opt.unwrap().ppn().get_bytes_array()[va.page_offset()];
+  *written = _data as u8;
+  ```
 * mmap: 安全映射 + 地址分配
   ```rust
   pub fn sys_mmap(_start: usize, _len: usize, _prot: usize) -> isize {
@@ -86,6 +93,7 @@
 * 内核也是在虚拟地址空间里工作，只是对物理内存做了恒等映射，所以看起来像“直接访问物理地址”
 * sys_get_time 的实现：不能直接解引用用户指针，必须通过「当前进程的页表」把用户地址翻译成内核能访问的物理页再写
 * 当前实验是：进程和内核各一张页表，trap 时切换 satp，两套地址空间独立。另外一种设计是一张表里既有用户区又有内核区。
+
 
 # rCore-Tutorial-Code-2025S
 
