@@ -115,3 +115,43 @@ lazy_static! {
 pub fn add_initproc() {
     add_task(INITPROC.clone());
 }
+
+
+///
+pub fn map_for_current_task(start_vpn: VirtPageNum, num_pages: usize, map_perm: MapPermission) -> isize {
+    let cur_task = current_task().unwrap();
+    let memory_set = &mut cur_task.inner_exclusive_access().memory_set;
+    let mut end_vpn = start_vpn;
+    for _ in 0..num_pages {
+        if let Some(pte) = memory_set.translate(end_vpn) {
+            if pte.is_valid() { // vpn 已经被映射到了已经存在的物理页
+                return -1;
+            }
+        }
+        end_vpn.step();
+    }
+    let start_va = VirtAddr::from(start_vpn);
+    let end_va = VirtAddr::from(end_vpn);
+    // 一块新的 MapArea，会自动 map PageTable
+    memory_set.insert_framed_area(start_va, end_va, map_perm);
+    return 0;
+}
+
+///
+pub fn unmap_for_current_task(start_vpn: VirtPageNum, num_pages: usize) -> isize {
+    let cur_task = current_task().unwrap();
+    let memory_set = &mut cur_task.inner_exclusive_access().memory_set;
+    let mut end_vpn = start_vpn;
+    for _ in 0..num_pages {
+        if let Some(pte) = memory_set.translate(end_vpn) {
+            if !pte.is_valid() { // 不能解除不存在的映射
+                return -1;
+            }
+            memory_set.unmap_from_page_table(end_vpn);
+            end_vpn.step();
+        } else { // 不能解除不存在的映射
+            return -1;
+        }
+    }
+    return 0;
+}

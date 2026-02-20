@@ -1,3 +1,32 @@
+* reading ch5, TaskControlBlock is a very important control structure.worth writing once.
+```rust
+  pub struct TaskControlBlock {
+    pub pid: PidHandle, //impl Drop trait
+    pub kernel_stack: KernelStack,
+    inner: UPSafeCell<TaskControlBlockInner>,
+  }
+
+  impl TaskControlBlock {
+    pub fn xxx(&self) -> xxx {
+      self.xxx
+    }
+  }
+
+  pub struct TaskControlBlockInner {
+    pub trap_cx_ppn: PhysPageNum, // 虚拟空间中固定了一页记录trap前的信息
+    pub base_size: usize,         // starting point in vitual space
+    pub task_cx: TaskContent,
+    pub memory_set: MemorySet,
+    pub parent: Option<Weak<TaskControlBlock>>,
+    pub children: Vec<Arc<TaskControlBlock>>,
+    pub exit_code: i32,
+    pub heap_bottom: usize,      // heap_bottom == base_size == user_sp at first init, still remains some confusion
+    pub program_brk: usize,
+    pub stride: usize,
+    pub priority: isize,
+  }
+```
+
 # rCore-Tutorial-Code-2025S
 
 ### Code
