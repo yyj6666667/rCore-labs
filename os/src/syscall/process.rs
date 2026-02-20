@@ -2,14 +2,14 @@
 use alloc::sync::Arc;
 
 use crate::{
+    config::{PAGE_SIZE, BIG_STRIDE},
     loader::get_app_data_by_name,
     mm::{translated_refmut, translated_str, translated_byte_buffer, MapPermission, VirtAddr},
     task::{
         add_task, current_task, current_user_token, exit_current_and_run_next,
-        suspend_current_and_run_next, map_for_current_task, unmap_for_current_task
+        suspend_current_and_run_next, map_for_current_task, unmap_for_current_task,
     },
     timer::get_time_us,
-    config::PAGE_SIZE,
 };
 
 #[repr(C)]
@@ -190,21 +190,47 @@ pub fn sys_sbrk(size: i32) -> isize {
     }
 }
 
-/// YOUR JOB: Implement spawn.
-/// HINT: fork + exec =/= spawn
-pub fn sys_spawn(_path: *const u8) -> isize {
-    trace!(
-        "kernel:pid[{}] sys_spawn NOT IMPLEMENTED",
-        current_task().unwrap().pid.0
-    );
-    -1
+/// spawn：创建子进程并令其执行目标程序（不复制父进程地址空间，直接加载 path）
+///
+/// - 成功：返回子进程 pid
+/// - 失败：返回 -1
+pub fn sys_spawn(path: *const u8) -> isize {
+    // 读取 path 并检验
+    let token = current_user_token();
+    let path_str = translated_str(token, path);
+    let elf_data = match get_app_data_by_name(&path_str) {
+        Some(data) => data,
+        None => return -1, // 无效文件名 / 程序不存在
+    };
+
+    // 用目标程序创建新进程
+    let new_task = Arc::new(crate::task::TaskControlBlock::new(elf_data));
+    let new_pid = new_task.pid.0;
+
+    // 建立与当前进程的父子关系
+    let current = current_task().unwrap();
+    {
+        let mut current_inner = current.inner_exclusive_access();
+        current_inner.children.push(new_task.clone());
+    }
+    {
+        let mut new_inner = new_task.inner_exclusive_access();
+        new_inner.parent = Some(Arc::downgrade(&current));
+    }
+
+    // 加入调度，返回子进程 pid
+    add_task(new_task);
+    new_pid as isize
 }
 
-// YOUR JOB: Set task priority.
-pub fn sys_set_priority(_prio: isize) -> isize {
-    trace!(
-        "kernel:pid[{}] sys_set_priority NOT IMPLEMENTED",
-        current_task().unwrap().pid.0
-    );
-    -1
+/// Set current process priority; pass = BIG_STRIDE / prio. prio must be >= 2.
+pub fn sys_set_priority(prio: isize) -> isize {
+    if prio < 2 {
+        return -1;
+    }
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    inner.priority = prio as usize;
+    inner.pass = BIG_STRIDE / inner.priority;
+    prio
 }
